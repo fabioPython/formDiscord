@@ -1,5 +1,19 @@
 export default {
   async fetch(request) {
+    let allowedOrigins = env.YOUR_DOMAIN.split(',');
+    //const allowedOrigins = ["https://yourdomain.com", "https://another-allowed.com"];
+    const origin = request.headers.get("Origin");
+    let headers = {
+      "Content-Type": "text/plain",
+    };
+
+    // If request comes from an allowed origin, add CORS headers
+    if (origin && allowedOrigins.includes(origin)) {
+      headers["Access-Control-Allow-Origin"] = origin;
+      headers["Access-Control-Allow-Methods"] = "POST, OPTIONS";
+      headers["Access-Control-Allow-Headers"] = "Content-Type";
+    }
+
     if (request.method !== "POST") {
       return new Response("Method not allowed", { status: 405 });
     }
