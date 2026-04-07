@@ -1,5 +1,5 @@
 export default {
-  async fetch(request) {
+  async fetch(request, , env) {
     let allowedOrigins = env.YOUR_DOMAIN.split(',');
     //const allowedOrigins = ["https://yourdomain.com", "https://another-allowed.com"];
     const origin = request.headers.get("Origin");
@@ -30,7 +30,7 @@ export default {
       }
 
       // Send to Discord webhook
-      const webhookUrl = "env.DISCORD_WEBHOOK_URL";
+      const webhookUrl = env.DISCORD_WEBHOOK_URL;
 
       await fetch(webhookUrl, {
         method: "POST",
