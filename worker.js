@@ -1,38 +1,54 @@
 export default {
   async fetch(request, env) {
-    let allowedOrigins = env.YOUR_DOMAIN.split(',');
-    //const allowedOrigins = ["https://yourdomain.com", "https://another-allowed.com"];
+    const allowedOrigins = env.YOUR_DOMAIN.split(",");
     const origin = request.headers.get("Origin");
-    let headers = {
-      "Content-Type": "text/plain",
+
+    const corsHeaders = {
+      "Content-Type": "application/json",
     };
 
-    // If request comes from an allowed origin, add CORS headers
+    // Add CORS headers if origin is allowed
     if (origin && allowedOrigins.includes(origin)) {
-      headers["Access-Control-Allow-Origin"] = origin;
-      headers["Access-Control-Allow-Methods"] = "POST";
-      headers["Access-Control-Allow-Headers"] = "Content-Type";
+      corsHeaders["Access-Control-Allow-Origin"] = origin;
+      corsHeaders["Access-Control-Allow-Methods"] = "POST, OPTIONS";
+      corsHeaders["Access-Control-Allow-Headers"] = "Content-Type";
     }
 
+    // ✅ Handle preflight request
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders,
+      });
+    }
 
+    // Only allow POST
     if (request.method !== "POST") {
-      return new Response("Method not allowed", { status: 405 });
+      return new Response(
+        JSON.stringify({ error: "Method not allowed" }),
+        {
+          status: 405,
+          headers: corsHeaders,
+        }
+      );
     }
 
     try {
-      const data = await request.json();
-
-      const { name, email, message } = data;
+      const { name, email, message } = await request.json();
 
       // Basic validation
       if (!name || !email || !message) {
-        return new Response("Missing fields", { status: 400 });
+        return new Response(
+          JSON.stringify({ error: "Missing fields" }),
+          {
+            status: 400,
+            headers: corsHeaders,
+          }
+        );
       }
 
       // Send to Discord webhook
-      const webhookUrl = env.DISCORD_WEBHOOK_URL;
-
-      await fetch(webhookUrl, {
+      await fetch(env.DISCORD_WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -40,12 +56,22 @@ export default {
         })
       });
 
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { "Content-Type": "application/json" }
-      });
+      return new Response(
+        JSON.stringify({ success: true }),
+        {
+          status: 200,
+          headers: corsHeaders,
+        }
+      );
 
     } catch (err) {
-      return new Response("Server error", { status: 500 });
+      return new Response(
+        JSON.stringify({ error: "Server error" }),
+        {
+          status: 500,
+          headers: corsHeaders,
+        }
+      );
     }
   }
 };
